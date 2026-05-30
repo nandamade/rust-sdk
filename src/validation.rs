@@ -164,26 +164,41 @@ impl Default for RequestValidator {
 pub struct Sanitizer;
 
 impl Sanitizer {
-    /// Sanitize HTML/script tags
+    /// Sanitize HTML by removing all dangerous tags and attributes.
+    ///
+    /// Uses the `ammonia` crate which handles all known XSS vectors including:
+    /// - `<script>`, `<iframe>`, `<object>`, `<embed>`
+    /// - Event handler attributes (`onerror`, `onload`, `onclick`, etc.)
+    /// - `javascript:` URLs
+    /// - CSS-based attacks
+    ///
+    /// Safe HTML tags (p, b, i, a, ul, li, etc.) are preserved.
     pub fn sanitize_html(input: &str) -> String {
-        input
-            .replace("<script", "&lt;script")
-            .replace("</script>", "&lt;/script&gt;")
-            .replace("<iframe", "&lt;iframe")
-            .replace("</iframe>", "&lt;/iframe&gt;")
+        ammonia::clean(input)
     }
 
-    /// Sanitize SQL
+    /// Sanitize HTML by stripping ALL tags, returning plain text only.
+    pub fn strip_all_html(input: &str) -> String {
+        ammonia::Builder::new()
+            .tags(std::collections::HashSet::new())
+            .clean(input)
+            .to_string()
+    }
+
+    /// Sanitize SQL special characters.
+    ///
+    /// Note: This is a basic defense-in-depth measure. Always prefer
+    /// parameterized queries (see `ParameterizedQuery`) over sanitization.
     pub fn sanitize_sql(input: &str) -> String {
         input
-            .replace("'", "''")
-            .replace(";", "")
+            .replace('\'', "''")
+            .replace(';', "")
             .replace("--", "")
             .replace("/*", "")
             .replace("*/", "")
     }
 
-    /// Sanitize path
+    /// Sanitize path to prevent directory traversal attacks.
     pub fn sanitize_path(input: &str) -> String {
         input
             .replace("../", "")
@@ -234,9 +249,43 @@ mod tests {
 
     #[test]
     fn test_sanitizer_html() {
+        // Basic script tag
         let input = "<script>alert('xss')</script>";
         let sanitized = Sanitizer::sanitize_html(input);
         assert!(!sanitized.contains("<script"));
+
+        // img onerror (previously bypassed)
+        let input = r#"<img src=x onerror="alert(1)">"#;
+        let sanitized = Sanitizer::sanitize_html(input);
+        assert!(!sanitized.contains("onerror"));
+
+        // svg onload (previously bypassed)
+        let input = r#"<svg onload="alert(1)">"#;
+        let sanitized = Sanitizer::sanitize_html(input);
+        assert!(!sanitized.contains("onload"));
+
+        // javascript: URL (previously bypassed)
+        let input = r#"<a href="javascript:alert(1)">click</a>"#;
+        let sanitized = Sanitizer::sanitize_html(input);
+        assert!(!sanitized.contains("javascript:"));
+
+        // iframe (previously handled)
+        let input = r#"<iframe src="evil.com"></iframe>"#;
+        let sanitized = Sanitizer::sanitize_html(input);
+        assert!(!sanitized.contains("<iframe"));
+
+        // Safe HTML should be preserved
+        let input = "<p>Hello <b>world</b></p>";
+        let sanitized = Sanitizer::sanitize_html(input);
+        assert!(sanitized.contains("<p>"));
+        assert!(sanitized.contains("<b>"));
+    }
+
+    #[test]
+    fn test_sanitizer_strip_all_html() {
+        let input = "<p>Hello <b>world</b></p><script>evil()</script>";
+        let sanitized = Sanitizer::strip_all_html(input);
+        assert_eq!(sanitized, "Hello world");
     }
 
     #[test]
