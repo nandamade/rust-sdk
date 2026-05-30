@@ -170,8 +170,9 @@ mod tests {
         let input = "<script>alert('xss')</script>";
         let sanitized = Sanitizer::sanitize_html(input);
 
+        // ammonia strips dangerous tags entirely
         assert!(!sanitized.contains("<script"));
-        assert!(sanitized.contains("&lt;script"));
+        assert!(!sanitized.contains("alert"));
     }
 
     #[test]
