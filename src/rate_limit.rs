@@ -29,16 +29,20 @@ impl TokenBucket {
     pub fn try_acquire(&self, tokens: u32) -> Result<()> {
         self.refill();
 
-        let current = self.tokens.load(Ordering::SeqCst);
-
-        if current >= tokens {
-            self.tokens.store(current - tokens, Ordering::SeqCst);
-            Ok(())
-        } else {
-            Err(SdkError::RateLimitExceeded(format!(
-                "Not enough tokens: required {tokens}, available {current}"
-            )))
-        }
+        self.tokens
+            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |current| {
+                if current >= tokens {
+                    Some(current - tokens)
+                } else {
+                    None
+                }
+            })
+            .map(|_| ())
+            .map_err(|current| {
+                SdkError::RateLimitExceeded(format!(
+                    "Not enough tokens: required {tokens}, available {current}"
+                ))
+            })
     }
 
     /// Refill tokens
@@ -191,6 +195,56 @@ mod tests {
         assert_eq!(bucket.current_tokens(), 5);
 
         assert!(bucket.try_acquire(10).is_err());
+    }
+
+    #[test]
+    fn test_token_bucket_concurrent_access() {
+        // Bucket with exactly 100 tokens, no refill during test
+        let bucket = Arc::new(TokenBucket::new(100, 0));
+        let mut handles = vec![];
+
+        // Spawn 100 threads, each trying to acquire 1 token
+        for _ in 0..100 {
+            let bucket_clone = Arc::clone(&bucket);
+            handles.push(std::thread::spawn(move || {
+                bucket_clone.try_acquire(1).is_ok()
+            }));
+        }
+
+        let successes: u32 = handles
+            .into_iter()
+            .map(|h| if h.join().unwrap() { 1 } else { 0 })
+            .sum();
+
+        // With atomic CAS, exactly 100 should succeed (no over-consumption)
+        assert_eq!(successes, 100);
+        assert_eq!(bucket.current_tokens(), 0);
+
+        // No more tokens available
+        assert!(bucket.try_acquire(1).is_err());
+    }
+
+    #[test]
+    fn test_token_bucket_concurrent_oversubscription() {
+        // Bucket with 10 tokens, 200 threads each trying to acquire 1
+        let bucket = Arc::new(TokenBucket::new(10, 0));
+        let mut handles = vec![];
+
+        for _ in 0..200 {
+            let bucket_clone = Arc::clone(&bucket);
+            handles.push(std::thread::spawn(move || {
+                bucket_clone.try_acquire(1).is_ok()
+            }));
+        }
+
+        let successes: u32 = handles
+            .into_iter()
+            .map(|h| if h.join().unwrap() { 1 } else { 0 })
+            .sum();
+
+        // Exactly 10 should succeed, never more
+        assert_eq!(successes, 10);
+        assert_eq!(bucket.current_tokens(), 0);
     }
 
     #[test]
