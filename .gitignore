@@ -1,0 +1,36 @@
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+
+# IDE
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Testing
+coverage/
+*.profraw
+*.profdata
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Artifacts
+*.pdb
+*.so
+*.dylib
+*.dll
+
+# Logs
+*.log
