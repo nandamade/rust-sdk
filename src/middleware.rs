@@ -58,6 +58,7 @@ impl MiddlewareChain {
     }
 
     /// Add middleware to the chain
+    #[allow(clippy::should_implement_trait)]
     pub fn add(mut self, middleware: Arc<dyn Middleware>) -> Self {
         self.middlewares.push(middleware);
         self
@@ -71,11 +72,7 @@ impl MiddlewareChain {
     }
 
     /// Process response through all middlewares
-    pub async fn process_response(
-        &self,
-        request: &RequestContext,
-        response: &mut ResponseContext,
-    ) {
+    pub async fn process_response(&self, request: &RequestContext, response: &mut ResponseContext) {
         for middleware in &self.middlewares {
             middleware.on_response(request, response).await;
         }
@@ -142,9 +139,10 @@ impl AuthMiddleware {
 #[async_trait]
 impl Middleware for AuthMiddleware {
     async fn on_request(&self, context: &mut RequestContext) {
-        context
-            .attributes
-            .insert("Authorization".to_string(), format!("Bearer {}", self.api_key));
+        context.attributes.insert(
+            "Authorization".to_string(),
+            format!("Bearer {}", self.api_key),
+        );
         tracing::debug!(request_id = %context.request_id, "Authorization header added");
     }
 }
@@ -233,7 +231,7 @@ mod tests {
         };
 
         chain.process_request(&mut context).await;
-        assert!(!context.attributes.is_empty() || true); // Logging middleware doesn't add attributes
+        // Logging middleware doesn't add attributes, just verify it runs without panic
     }
 
     #[tokio::test]

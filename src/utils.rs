@@ -50,7 +50,8 @@ impl RateLimiterMetrics {
 
     /// Get total requests
     pub fn total_requests(&self) -> u64 {
-        self.total_requests.load(std::sync::atomic::Ordering::SeqCst)
+        self.total_requests
+            .load(std::sync::atomic::Ordering::SeqCst)
     }
 
     /// Get rejected requests
@@ -194,7 +195,9 @@ impl SignatureGenerator {
         if calculated == signature {
             Ok(())
         } else {
-            Err(SdkError::AuthenticationError("Signature verification failed".to_string()))
+            Err(SdkError::AuthenticationError(
+                "Signature verification failed".to_string(),
+            ))
         }
     }
 }
@@ -224,10 +227,7 @@ pub struct RetryHelper;
 
 impl RetryHelper {
     /// Retry with exponential backoff
-    pub async fn retry_with_backoff<F, T, Fut>(
-        mut f: F,
-        policy: &RetryPolicy,
-    ) -> Result<T>
+    pub async fn retry_with_backoff<F, T, Fut>(mut f: F, policy: &RetryPolicy) -> Result<T>
     where
         F: FnMut() -> Fut,
         Fut: std::future::Future<Output = Result<T>>,

@@ -13,16 +13,10 @@ pub trait DatabaseConnection: Send + Sync {
     async fn execute(&self, query: &str) -> Result<()>;
 
     /// Query single row
-    async fn query_one<T: for<'de> Deserialize<'de>>(
-        &self,
-        query: &str,
-    ) -> Result<Option<T>>;
+    async fn query_one<T: for<'de> Deserialize<'de>>(&self, query: &str) -> Result<Option<T>>;
 
     /// Query multiple rows
-    async fn query_all<T: for<'de> Deserialize<'de>>(
-        &self,
-        query: &str,
-    ) -> Result<Vec<T>>;
+    async fn query_all<T: for<'de> Deserialize<'de>>(&self, query: &str) -> Result<Vec<T>>;
 
     /// Health check
     async fn health_check(&self) -> Result<()>;
@@ -31,6 +25,12 @@ pub trait DatabaseConnection: Send + Sync {
 /// In-memory database for testing
 pub struct InMemoryDatabase {
     data: Arc<parking_lot::Mutex<std::collections::HashMap<String, Vec<u8>>>>,
+}
+
+impl Default for InMemoryDatabase {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl InMemoryDatabase {
@@ -71,17 +71,11 @@ impl DatabaseConnection for InMemoryDatabase {
         Ok(())
     }
 
-    async fn query_one<T: for<'de> Deserialize<'de>>(
-        &self,
-        _query: &str,
-    ) -> Result<Option<T>> {
+    async fn query_one<T: for<'de> Deserialize<'de>>(&self, _query: &str) -> Result<Option<T>> {
         Ok(None)
     }
 
-    async fn query_all<T: for<'de> Deserialize<'de>>(
-        &self,
-        _query: &str,
-    ) -> Result<Vec<T>> {
+    async fn query_all<T: for<'de> Deserialize<'de>>(&self, _query: &str) -> Result<Vec<T>> {
         Ok(Vec::new())
     }
 
@@ -91,13 +85,13 @@ impl DatabaseConnection for InMemoryDatabase {
 }
 
 /// User repository
-pub struct UserRepository {
-    db: Arc<dyn DatabaseConnection>,
+pub struct UserRepository<DB: DatabaseConnection> {
+    db: Arc<DB>,
 }
 
-impl UserRepository {
+impl<DB: DatabaseConnection> UserRepository<DB> {
     /// Create new user repository
-    pub fn new(db: Arc<dyn DatabaseConnection>) -> Self {
+    pub fn new(db: Arc<DB>) -> Self {
         Self { db }
     }
 
@@ -115,7 +109,7 @@ impl UserRepository {
 
     /// Get user by ID
     pub async fn get(&self, id: Uuid) -> Result<Option<UserDto>> {
-        let _query = format!("SELECT * FROM users WHERE id = '{}'", id);
+        let _query = format!("SELECT * FROM users WHERE id = '{id}'");
         self.db.query_one(&_query).await
     }
 
@@ -137,7 +131,7 @@ impl UserRepository {
 
     /// Delete user
     pub async fn delete(&self, id: Uuid) -> Result<()> {
-        let _query = format!("DELETE FROM users WHERE id = '{}'", id);
+        let _query = format!("DELETE FROM users WHERE id = '{id}'");
         self.db.execute(&_query).await
     }
 }
@@ -244,7 +238,7 @@ impl QueryBuilder {
 
     /// Order by
     pub fn order_by(mut self, column: &str, direction: &str) -> Self {
-        self.order_by.push(format!("{} {}", column, direction));
+        self.order_by.push(format!("{column} {direction}"));
         self
     }
 
@@ -283,11 +277,11 @@ impl QueryBuilder {
         }
 
         if let Some(limit) = self.limit_value {
-            query.push_str(&format!(" LIMIT {}", limit));
+            query.push_str(&format!(" LIMIT {limit}"));
         }
 
         if let Some(offset) = self.offset_value {
-            query.push_str(&format!(" OFFSET {}", offset));
+            query.push_str(&format!(" OFFSET {offset}"));
         }
 
         Ok(query)

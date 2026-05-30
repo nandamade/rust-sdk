@@ -82,13 +82,16 @@ impl SdkError {
         SdkError::ConfigError(msg.into())
     }
 
+    /// Create a new database error
+    pub fn database(msg: impl Into<String>) -> Self {
+        SdkError::DatabaseError(msg.into())
+    }
+
     /// Check if error is retryable
     pub fn is_retryable(&self) -> bool {
         matches!(
             self,
-            SdkError::Timeout { .. }
-                | SdkError::RateLimitExceeded(_)
-                | SdkError::HttpError(_)
+            SdkError::Timeout { .. } | SdkError::RateLimitExceeded(_) | SdkError::HttpError(_)
         )
     }
 

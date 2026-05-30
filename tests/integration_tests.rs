@@ -2,13 +2,13 @@
 
 #[cfg(test)]
 mod tests {
-    use rust_sdk::prelude::*;
     use rust_sdk::cache::Cache;
-    use rust_sdk::rate_limit::{TokenBucket, PerUserRateLimiter};
-    use rust_sdk::validation::*;
-    use rust_sdk::utils::*;
     use rust_sdk::database::*;
-    use std::time::Duration;
+    use rust_sdk::prelude::*;
+    use rust_sdk::rate_limit::{PerUserRateLimiter, TokenBucket};
+    use rust_sdk::utils::*;
+    use rust_sdk::validation::*;
+
     use uuid::Uuid;
 
     // ============ Configuration Tests ============
@@ -18,7 +18,7 @@ mod tests {
         let config = Config::default();
         assert_eq!(config.base_url, "https://api.example.com");
         assert!(config.api_key.is_none());
-        assert!(config.debug.is_false());
+        assert!(!config.debug);
     }
 
     #[test]
@@ -34,8 +34,8 @@ mod tests {
 
     #[test]
     fn test_config_with_header() {
-        let config = Config::new("https://api.example.com")
-            .with_header("X-Custom-Header", "custom-value");
+        let config =
+            Config::new("https://api.example.com").with_header("X-Custom-Header", "custom-value");
 
         assert_eq!(
             config.custom_headers.get("X-Custom-Header"),
@@ -338,10 +338,7 @@ mod tests {
 
     #[test]
     fn test_query_builder_minimal() {
-        let query = QueryBuilder::new()
-            .from("products")
-            .build()
-            .unwrap();
+        let query = QueryBuilder::new().from("products").build().unwrap();
 
         assert!(query.contains("SELECT *"));
         assert!(query.contains("FROM products"));

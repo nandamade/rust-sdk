@@ -22,26 +22,26 @@
 //! }
 //! ```
 
+pub mod cache;
 pub mod client;
 pub mod config;
+pub mod database;
 pub mod error;
 pub mod middleware;
 pub mod models;
-pub mod cache;
-pub mod validation;
 pub mod rate_limit;
-pub mod database;
 pub mod utils;
+pub mod validation;
 
 pub use client::Client;
 pub use config::Config;
-pub use error::{SdkError, Result};
+pub use error::{Result, SdkError};
 
 #[doc(hidden)]
 pub mod prelude {
     pub use crate::client::Client;
     pub use crate::config::Config;
-    pub use crate::error::{SdkError, Result};
-    pub use crate::models::*;
+    pub use crate::error::{Result, SdkError};
     pub use crate::middleware::{Middleware, MiddlewareChain};
+    pub use crate::models::*;
 }

@@ -48,7 +48,7 @@ impl Cache {
 
             serde_json::from_slice(&entry.value)
                 .map(Some)
-                .map_err(|e| SdkError::CacheError(format!("Deserialization error: {}", e)))
+                .map_err(|e| SdkError::CacheError(format!("Deserialization error: {e}")))
         } else {
             Ok(None)
         }
@@ -57,9 +57,11 @@ impl Cache {
     /// Set value in cache
     pub fn set<T: Serialize>(&self, key: impl Into<String>, value: &T) -> Result<()> {
         if self.storage.len() >= self.max_entries {
-            // Simple eviction: remove oldest entries
-            if let Some((k, _)) = self.storage.iter().next() {
-                self.storage.remove(k.key());
+            // Simple eviction: remove an arbitrary entry when full
+            if let Some(entry) = self.storage.iter().next() {
+                let key_to_remove = entry.key().clone();
+                drop(entry);
+                self.storage.remove(&key_to_remove);
             }
         }
 
@@ -67,19 +69,22 @@ impl Cache {
         let expires_at = Utc::now() + self.ttl;
 
         let serialized = serde_json::to_vec(value)
-            .map_err(|e| SdkError::CacheError(format!("Serialization error: {}", e)))?;
+            .map_err(|e| SdkError::CacheError(format!("Serialization error: {e}")))?;
 
-        self.storage.insert(key, CacheEntry {
-            value: serialized,
-            expires_at,
-        });
+        self.storage.insert(
+            key,
+            CacheEntry {
+                value: serialized,
+                expires_at,
+            },
+        );
 
         Ok(())
     }
 
     /// Remove value from cache
-    pub fn remove(&self, key: &str) -> Option<CacheEntry> {
-        self.storage.remove(key).map(|(_, v)| v)
+    pub fn remove(&self, key: &str) {
+        self.storage.remove(key);
     }
 
     /// Clear all cache
@@ -163,7 +168,7 @@ impl LruCache {
         if let Some(value) = cache.get(key) {
             serde_json::from_slice(value)
                 .map(Some)
-                .map_err(|e| SdkError::CacheError(format!("Deserialization error: {}", e)))
+                .map_err(|e| SdkError::CacheError(format!("Deserialization error: {e}")))
         } else {
             Ok(None)
         }
@@ -173,7 +178,7 @@ impl LruCache {
     pub fn set<T: Serialize>(&self, key: impl Into<String>, value: &T) -> Result<()> {
         let key = key.into();
         let serialized = serde_json::to_vec(value)
-            .map_err(|e| SdkError::CacheError(format!("Serialization error: {}", e)))?;
+            .map_err(|e| SdkError::CacheError(format!("Serialization error: {e}")))?;
 
         let mut cache = self.cache.lock();
         cache.put(key.clone(), serialized);
