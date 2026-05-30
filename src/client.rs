@@ -33,10 +33,15 @@ impl Client {
 
     /// Create a new client with configuration
     pub fn with_config(config: Config) -> Result<Self> {
-        let http_client = ReqwestClient::builder()
+        let mut builder = ReqwestClient::builder()
             .timeout(config.http_timeout())
-            .connect_timeout(Duration::from_secs(config.http.connect_timeout_secs))
-            .http2_prior_knowledge()
+            .connect_timeout(Duration::from_secs(config.http.connect_timeout_secs));
+
+        if config.http.force_http2 {
+            builder = builder.http2_prior_knowledge();
+        }
+
+        let http_client = builder
             .build()
             .map_err(|e| SdkError::http(format!("Failed to create HTTP client: {e}")))?;
 

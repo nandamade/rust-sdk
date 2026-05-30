@@ -66,9 +66,11 @@ pub struct HttpConfig {
     #[serde(default = "default_true")]
     pub tcp_nodelay: bool,
 
-    /// Use HTTP/2
-    #[serde(default = "default_true")]
-    pub http2: bool,
+    /// Force HTTP/2 without negotiation (prior knowledge).
+    /// When false (default), the client uses standard protocol negotiation,
+    /// which works with both HTTP/1.1 and HTTP/2 servers.
+    #[serde(default)]
+    pub force_http2: bool,
 }
 
 /// Retry configuration
@@ -301,7 +303,7 @@ impl Default for HttpConfig {
             max_redirects: 5,
             keepalive_secs: 60,
             tcp_nodelay: true,
-            http2: true,
+            force_http2: false,
         }
     }
 }
