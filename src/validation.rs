@@ -83,7 +83,10 @@ pub struct AlphanumericValidator;
 
 impl Validator for AlphanumericValidator {
     fn validate(&self, value: &str) -> Result<()> {
-        if value.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
+        if value
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+        {
             Ok(())
         } else {
             Err(SdkError::validation(
@@ -102,7 +105,7 @@ impl RegexValidator {
     /// Create new regex validator
     pub fn new(pattern: &str) -> Result<Self> {
         let regex = Regex::new(pattern)
-            .map_err(|e| SdkError::validation(format!("Invalid regex pattern: {}", e)))?;
+            .map_err(|e| SdkError::validation(format!("Invalid regex pattern: {e}")))?;
 
         Ok(Self { pattern: regex })
     }
@@ -133,10 +136,7 @@ impl RequestValidator {
 
     /// Add validation rule
     pub fn add_rule(mut self, field: impl Into<String>, validator: Box<dyn Validator>) -> Self {
-        self.rules
-            .entry(field.into())
-            .or_insert_with(Vec::new)
-            .push(validator);
+        self.rules.entry(field.into()).or_default().push(validator);
         self
     }
 

@@ -38,14 +38,12 @@ impl Client {
             .connect_timeout(Duration::from_secs(config.http.connect_timeout_secs))
             .http2_prior_knowledge()
             .build()
-            .map_err(|e| SdkError::http(format!("Failed to create HTTP client: {}", e)))?;
+            .map_err(|e| SdkError::http(format!("Failed to create HTTP client: {e}")))?;
 
-        let mut middleware_chain = MiddlewareChain::new()
-            .add(Arc::new(LoggingMiddleware));
+        let mut middleware_chain = MiddlewareChain::new().add(Arc::new(LoggingMiddleware));
 
         if let Some(ref api_key) = config.api_key {
-            middleware_chain = middleware_chain
-                .add(Arc::new(AuthMiddleware::new(api_key.clone())));
+            middleware_chain = middleware_chain.add(Arc::new(AuthMiddleware::new(api_key.clone())));
         }
 
         let cache = Cache::new(config.cache.max_entries, config.cache.ttl_secs);
@@ -142,11 +140,14 @@ impl Client {
         response
             .json::<HealthCheckResponse>()
             .await
-            .map_err(|e| SdkError::http(format!("Failed to parse response: {}", e)))
+            .map_err(|e| SdkError::http(format!("Failed to parse response: {e}")))
     }
 
     /// GET request
-    pub async fn get<T: serde::de::DeserializeOwned>(&self, path: &str) -> Result<T> {
+    pub async fn get<T: serde::de::DeserializeOwned + serde::Serialize>(
+        &self,
+        path: &str,
+    ) -> Result<T> {
         let url = format!("{}{}", self.config.base_url, path);
 
         // Check cache
@@ -185,7 +186,7 @@ impl Client {
         let data = response
             .json::<T>()
             .await
-            .map_err(|e| SdkError::http(format!("Failed to parse response: {}", e)))?;
+            .map_err(|e| SdkError::http(format!("Failed to parse response: {e}")))?;
 
         // Cache result
         let _ = self.cache.set(path, &data);
@@ -231,7 +232,7 @@ impl Client {
         response
             .json::<R>()
             .await
-            .map_err(|e| SdkError::http(format!("Failed to parse response: {}", e)))
+            .map_err(|e| SdkError::http(format!("Failed to parse response: {e}")))
     }
 
     /// PUT request
@@ -272,7 +273,7 @@ impl Client {
         response
             .json::<R>()
             .await
-            .map_err(|e| SdkError::http(format!("Failed to parse response: {}", e)))
+            .map_err(|e| SdkError::http(format!("Failed to parse response: {e}")))
     }
 
     /// DELETE request
@@ -308,7 +309,7 @@ impl Client {
         response
             .json::<R>()
             .await
-            .map_err(|e| SdkError::http(format!("Failed to parse response: {}", e)))
+            .map_err(|e| SdkError::http(format!("Failed to parse response: {e}")))
     }
 
     /// Validate email

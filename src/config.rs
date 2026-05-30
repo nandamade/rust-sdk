@@ -147,21 +147,52 @@ pub struct DatabaseConfig {
 }
 
 // Default functions for serde
-fn default_timeout() -> u64 { 30 }
-fn default_connect_timeout() -> u64 { 10 }
-fn default_max_redirects() -> usize { 5 }
-fn default_keepalive() -> u64 { 60 }
-fn default_true() -> bool { true }
-fn default_max_retries() -> u32 { 3 }
-fn default_initial_backoff() -> u64 { 100 }
-fn default_max_backoff() -> u64 { 30000 }
-fn default_multiplier() -> f64 { 2.0 }
-fn default_cache_size() -> usize { 1000 }
-fn default_cache_ttl() -> u64 { 3600 }
-fn default_rps() -> u32 { 100 }
-fn default_burst() -> u32 { 200 }
-fn default_pool_size() -> u32 { 10 }
-fn default_idle_timeout() -> u64 { 300 }
+fn default_timeout() -> u64 {
+    30
+}
+#[allow(dead_code)]
+fn default_connect_timeout() -> u64 {
+    10
+}
+fn default_max_redirects() -> usize {
+    5
+}
+fn default_keepalive() -> u64 {
+    60
+}
+fn default_true() -> bool {
+    true
+}
+fn default_max_retries() -> u32 {
+    3
+}
+fn default_initial_backoff() -> u64 {
+    100
+}
+fn default_max_backoff() -> u64 {
+    30000
+}
+fn default_multiplier() -> f64 {
+    2.0
+}
+fn default_cache_size() -> usize {
+    1000
+}
+fn default_cache_ttl() -> u64 {
+    3600
+}
+fn default_rps() -> u32 {
+    100
+}
+fn default_burst() -> u32 {
+    200
+}
+fn default_pool_size() -> u32 {
+    10
+}
+fn default_idle_timeout() -> u64 {
+    300
+}
 
 impl Config {
     /// Create a new configuration from base URL
@@ -188,7 +219,10 @@ impl Config {
             .map_err(|_| SdkError::config("SDK_BASE_URL environment variable not set"))?;
 
         let api_key = std::env::var("SDK_API_KEY").ok();
-        let debug = std::env::var("SDK_DEBUG").ok().map(|v| v == "true").unwrap_or(false);
+        let debug = std::env::var("SDK_DEBUG")
+            .ok()
+            .map(|v| v == "true")
+            .unwrap_or(false);
 
         Ok(Self {
             base_url,
@@ -202,10 +236,10 @@ impl Config {
     /// Load configuration from file
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
         let content = std::fs::read_to_string(path)
-            .map_err(|e| SdkError::config(format!("Failed to read config file: {}", e)))?;
+            .map_err(|e| SdkError::config(format!("Failed to read config file: {e}")))?;
 
         serde_json::from_str(&content)
-            .map_err(|e| SdkError::config(format!("Invalid config file: {}", e)))
+            .map_err(|e| SdkError::config(format!("Invalid config file: {e}")))
     }
 
     /// Set API key

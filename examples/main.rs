@@ -1,12 +1,11 @@
 //! Examples for using the Rust SDK
 
-use rust_sdk::prelude::*;
 use rust_sdk::cache::Cache;
 use rust_sdk::database::*;
-use std::sync::Arc;
+use rust_sdk::prelude::*;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     // Initialize tracing for logging
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
@@ -36,7 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-async fn example_basic_client() -> Result<(), Box<dyn std::error::Error>> {
+async fn example_basic_client() -> std::result::Result<(), Box<dyn std::error::Error>> {
     println!("1. Basic Client Creation");
     println!("--------------------------");
 
@@ -47,7 +46,7 @@ async fn example_basic_client() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-async fn example_config() -> Result<(), Box<dyn std::error::Error>> {
+async fn example_config() -> std::result::Result<(), Box<dyn std::error::Error>> {
     println!("2. Configuration Examples");
     println!("--------------------------");
 
@@ -65,7 +64,7 @@ async fn example_config() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-async fn example_caching() -> Result<(), Box<dyn std::error::Error>> {
+async fn example_caching() -> std::result::Result<(), Box<dyn std::error::Error>> {
     println!("3. Caching Examples");
     println!("--------------------------");
 
@@ -80,7 +79,7 @@ async fn example_caching() -> Result<(), Box<dyn std::error::Error>> {
 
     // Retrieve from cache
     let user: String = cache.get("user:123")?.unwrap();
-    println!("  Retrieved: {} for user:123", user);
+    println!("  Retrieved: {user} for user:123");
 
     // Check if key exists
     if cache.contains_key("user:456") {
@@ -94,7 +93,7 @@ async fn example_caching() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn example_validation() -> Result<(), Box<dyn std::error::Error>> {
+fn example_validation() -> std::result::Result<(), Box<dyn std::error::Error>> {
     println!("4. Validation Examples");
     println!("--------------------------");
 
@@ -103,19 +102,19 @@ fn example_validation() -> Result<(), Box<dyn std::error::Error>> {
     // Email validation
     match client.validate_email("valid@example.com") {
         Ok(()) => println!("✓ valid@example.com is valid"),
-        Err(e) => println!("✗ Email validation failed: {}", e),
+        Err(e) => println!("✗ Email validation failed: {e}"),
     }
 
     match client.validate_email("invalid-email") {
         Ok(()) => println!("✓ invalid-email is valid"),
-        Err(e) => println!("✓ Correctly rejected invalid-email"),
+        Err(_e) => println!("✓ Correctly rejected invalid-email"),
     }
 
     println!();
     Ok(())
 }
 
-async fn example_database() -> Result<(), Box<dyn std::error::Error>> {
+async fn example_database() -> std::result::Result<(), Box<dyn std::error::Error>> {
     println!("5. Database Examples");
     println!("--------------------------");
 
@@ -136,12 +135,12 @@ async fn example_database() -> Result<(), Box<dyn std::error::Error>> {
         .build()?;
 
     println!("✓ Query built successfully");
-    println!("  Query: {}\n", query);
+    println!("  Query: {query}\n");
 
     Ok(())
 }
 
-async fn example_error_handling() -> Result<(), Box<dyn std::error::Error>> {
+async fn example_error_handling() -> std::result::Result<(), Box<dyn std::error::Error>> {
     println!("6. Error Handling Examples");
     println!("--------------------------");
 
@@ -151,9 +150,9 @@ async fn example_error_handling() -> Result<(), Box<dyn std::error::Error>> {
     match result {
         Ok(_) => println!("✓ Operation succeeded"),
         Err(SdkError::ValidationError(msg)) => {
-            println!("✓ Caught validation error: {}", msg);
+            println!("✓ Caught validation error: {msg}");
         }
-        Err(e) => println!("✗ Other error: {}", e),
+        Err(e) => println!("✗ Other error: {e}"),
     }
 
     // Check if error is retryable

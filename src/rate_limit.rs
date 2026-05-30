@@ -32,13 +32,11 @@ impl TokenBucket {
         let current = self.tokens.load(Ordering::SeqCst);
 
         if current >= tokens {
-            self.tokens
-                .store(current - tokens, Ordering::SeqCst);
+            self.tokens.store(current - tokens, Ordering::SeqCst);
             Ok(())
         } else {
             Err(SdkError::RateLimitExceeded(format!(
-                "Not enough tokens: required {}, available {}",
-                tokens, current
+                "Not enough tokens: required {tokens}, available {current}"
             )))
         }
     }
@@ -96,7 +94,7 @@ impl SlidingWindowRateLimiter {
     pub fn allow_request(&self, client_id: &str) -> Result<()> {
         let now = Instant::now();
 
-        let mut entry = self.requests.entry(client_id.to_string()).or_insert_with(Vec::new);
+        let mut entry = self.requests.entry(client_id.to_string()).or_default();
 
         // Remove expired requests
         entry.retain(|req_time| now.duration_since(*req_time) < self.window_duration);
@@ -117,7 +115,7 @@ impl SlidingWindowRateLimiter {
         if let Some(mut entry) = self.requests.get_mut(client_id) {
             let now = Instant::now();
             entry.retain(|req_time| now.duration_since(*req_time) < self.window_duration);
-            (self.max_requests - entry.len() as u32).max(0)
+            self.max_requests - entry.len() as u32
         } else {
             self.max_requests
         }
